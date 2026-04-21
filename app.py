@@ -1,7 +1,7 @@
-import sys, os
+import sys, os, json, urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import streamlit as st
-import urllib.error
 
 try:
     from kazi_ai.payroll import PayrollCalculator
@@ -9,78 +9,50 @@ try:
 except ImportError:
     HAS_KAZI = False
 
-# ── AI helper — Gemini first (free tier), Anthropic fallback ────────────
-_GEMINI_BASE = "https://generativelanguage.googleapis.com"
-_GEMINI_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"]
 
-def _get_gemini_key():
+def _get_api_key():
+    """Gemini key from Streamlit secrets or env. Free at aistudio.google.com"""
     try:
-        k = st.secrets.get("GOOGLE_API_KEY") or st.secrets.get("GEMINI_API_KEY")
-        if k: return k
+        import streamlit as st
+        k = (st.secrets.get("GOOGLE_API_KEY")
+             or st.secrets.get("GEMINI_API_KEY"))
+        if k:
+            return k
     except Exception:
         pass
-    return os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY", "")
+    return (os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GEMINI_API_KEY", ""))
 
-def _get_anthropic_key():
-    try:
-        k = st.secrets.get("ANTHROPIC_API_KEY")
-        if k: return k
-    except Exception:
-        pass
-    return os.environ.get("ANTHROPIC_API_KEY", "")
 
 def _call_gemini(system: str, user: str, api_key: str) -> str:
-    import urllib.request as _req, json as _json
+    """Call Gemini REST API directly — no SDK needed. Free tier works."""
+    _BASE = "https://generativelanguage.googleapis.com"
+    models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"]
     payload = {
-        "contents": [{"role": "user", "parts": [{"text": f"{system}\n\n{user}"}]}],
-        "generationConfig": {"maxOutputTokens": 1024, "temperature": 0.3},
+        "system_instruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": user}]}],
+        "generationConfig": {"maxOutputTokens": 800, "temperature": 0.3},
     }
-    for model in _GEMINI_MODELS:
-        url = f"{_GEMINI_BASE}/v1beta/models/{model}:generateContent?key={api_key}"
+    last_err = ""
+    for model in models:
+        url = f"{_BASE}/v1beta/models/{model}:generateContent?key={api_key}"
+        req = urllib.request.Request(
+            url, data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"}, method="POST")
         try:
-            r = _req.urlopen(_req.Request(url,
-                data=_json.dumps(payload).encode(),
-                headers={"Content-Type": "application/json"},
-                method="POST"), timeout=20)
-            d = _json.loads(r.read())
-            return d["candidates"][0]["content"]["parts"][0]["text"]
+            with urllib.request.urlopen(req, timeout=20) as r:
+                data = json.loads(r.read())
+            return data["candidates"][0]["content"]["parts"][0]["text"]
         except urllib.error.HTTPError as e:
+            last_err = f"HTTP {e.code}"
             if e.code in (400, 404):
-                continue
+                continue   # try next model
             raise
-    raise RuntimeError("All Gemini models unavailable")
+        except Exception as e:
+            last_err = str(e)
+            continue
+    raise RuntimeError(f"All Gemini models failed. Last error: {last_err}")
 
-def _call_anthropic(system: str, user: str, api_key: str) -> str:
-    import anthropic as _ant
-    client = _ant.Anthropic(api_key=api_key)
-    msg = client.messages.create(
-        model="claude-haiku-4-5-20251001", max_tokens=1024,
-        system=system,
-        messages=[{"role": "user", "content": user}])
-    return msg.content[0].text
-
-def ai_call(system: str, user: str,
-            gemini_key: str = "", anthropic_key: str = "") -> str:
-    """Try Gemini first (free tier), fall back to Anthropic."""
-    gkey = gemini_key or _get_gemini_key()
-    akey = anthropic_key or _get_anthropic_key()
-    if gkey:
-        try:
-            return _call_gemini(system, user, gkey)
-        except Exception:
-            pass
-    if akey:
-        return _call_anthropic(system, user, akey)
-    raise RuntimeError("No AI key available")
-
-def has_any_key() -> bool:
-    return bool(_get_gemini_key() or _get_anthropic_key())
-
-def which_provider() -> str:
-    if _get_gemini_key(): return "gemini"
-    if _get_anthropic_key(): return "anthropic"
-    return "none"
-# ────────────────────────────────────────────────────────────────────────
 
 st.set_page_config(page_title="KaziAI", page_icon="⚖️", layout="centered")
 
@@ -91,90 +63,72 @@ if not HAS_KAZI:
 st.title("⚖️ KaziAI — Kenya HR Compliance")
 st.caption("NSSF · NHIF · PAYE · Employment Act 2007 · Plain language")
 
-provider = which_provider()
-
-def _ai_key_widget(label_suffix: str = "") -> tuple[str, str]:
-    """Show key inputs only if no server-side key configured."""
-    if which_provider() != "none":
-        return _get_gemini_key(), _get_anthropic_key()
-    gkey = st.text_input(f"Google Gemini key (free){label_suffix}:",
-        type="password", placeholder="AIza...",
-        help="Free at aistudio.google.com — no credit card needed.")
-    st.caption("— or use Anthropic instead —")
-    akey = st.text_input(f"Anthropic key{label_suffix}:",
-        type="password", placeholder="sk-ant-...")
-    return gkey, akey
+api_key = _get_api_key()
 
 tab1, tab2, tab3 = st.tabs(["💰 Payroll Calculator", "❓ HR Q&A", "📄 Contract"])
 
 with tab1:
     st.subheader("Payroll Calculator")
-    st.caption("NSSF 2024 (Tier I+II) · NHIF Finance Act 2024 · KRA PAYE FY2025/26 · AHL 1.5%")
-    gross  = st.number_input("Gross monthly salary (KES):", min_value=15000,
-                              max_value=5000000, value=85000, step=5000)
+    st.caption("NSSF 2024 · NHIF Finance Act 2024 · KRA PAYE FY2025/26 · AHL 1.5%")
+    gross  = st.number_input("Gross monthly salary (KES):", min_value=15000, max_value=5000000, value=85000, step=5000)
     period = st.text_input("Period:", value="2026-04")
-    if st.button("Calculate net pay", type="primary"):
+    if st.button("Calculate", type="primary"):
         try:
-            result = PayrollCalculator().calculate(gross, period)
+            r = PayrollCalculator().calculate(gross, period)
             c1, c2 = st.columns(2)
-            with c1:
-                st.metric("Gross Salary",    f"KES {result.gross_salary:,.0f}")
-                st.metric("NSSF (employee)", f"KES {result.nssf_employee:,.0f}")
-                st.metric("NHIF",            f"KES {result.nhif_employee:,.0f}")
-                st.metric("PAYE",            f"KES {result.paye:,.0f}")
-            with c2:
-                st.metric("Net Pay",
-                          f"KES {result.net_pay:,.0f}",
-                          delta=f"-{result.gross_salary - result.net_pay:,.0f}")
-                st.metric("Employer NSSF",   f"KES {result.nssf_employer:,.0f}")
-                st.metric("Total Cost",      f"KES {result.employer_cost:,.0f}")
-            st.info("Always verify statutory rates with KRA/NSSF/NHIF directly.")
+            c1.metric("Gross",         f"KES {r.gross_salary:,.0f}")
+            c1.metric("NSSF",          f"KES {r.nssf_employee:,.0f}")
+            c1.metric("NHIF",          f"KES {r.nhif_employee:,.0f}")
+            c1.metric("PAYE",          f"KES {r.paye:,.0f}")
+            c2.metric("Net Pay",       f"KES {r.net_pay:,.0f}",
+                      delta=f"-{r.gross_salary - r.net_pay:,.0f}")
+            c2.metric("Employer NSSF", f"KES {r.nssf_employer:,.0f}")
+            c2.metric("Total Cost",    f"KES {r.employer_cost:,.0f}")
+            st.info("Always verify with KRA/NSSF/NHIF for official current rates.")
         except Exception:
-            st.error("Could not calculate. Please check your inputs.")
+            st.error("Could not calculate payroll. Please check your inputs.")
 
-HR_SYSTEM = (
-    "You are a Kenya HR compliance assistant. Answer questions about "
-    "Employment Act 2007, NSSF Act, NHIF Act, KRA PAYE, leave entitlements, "
-    "termination, and labour court processes. "
-    "Always cite the relevant Act and section number. "
-    "End every answer with: "
-    "⚠️ General guidance only — consult a qualified HR practitioner for specific cases."
-)
+HR_SYSTEM = """You are a Kenya HR compliance assistant. Answer questions about:
+Employment Act 2007, NSSF Act, NHIF Act, KRA PAYE, statutory leave, and termination in Kenya.
+Always cite the relevant Act and section number.
+Keep answers clear and practical for SME owners and HR staff.
+End every answer with: ⚠️ General guidance only — consult a qualified HR practitioner for specific cases."""
+
+CONTRACT_SYSTEM = """You generate Kenya Employment Act 2007-compliant employment contract templates.
+Include: parties, role, reporting line, salary, statutory deductions (NSSF/NHIF/PAYE),
+annual leave (21 days), sick leave, maternity/paternity leave, notice period, termination,
+governing law (Laws of Kenya). Add clear [SIGNATURE LINES] at the end.
+Note at the top: TEMPLATE ONLY — review with a qualified employment lawyer before signing."""
+
+def _key_input(label: str, key: str) -> str:
+    if api_key:
+        return api_key
+    return st.text_input(label, type="password", key=key,
+                          placeholder="AIza...",
+                          help="Free at aistudio.google.com — no credit card needed.")
 
 with tab2:
     st.subheader("HR & Employment Law Q&A")
-    if provider == "none":
-        st.info("Add a free Gemini key below to enable AI answers.")
-    gkey2, akey2 = _ai_key_widget(" (tab 2)")
-    active2 = gkey2 or akey2
-    q = st.text_area("Your question:",
-        placeholder="e.g. What is the minimum notice period for a permanent employee?")
+    k2  = _key_input("Google AI key (free at aistudio.google.com):", "k2")
+    q   = st.text_area("Your question:", placeholder="e.g. What is the minimum notice period for permanent employees?")
     if st.button("Get answer", type="primary", key="ask_btn"):
-        if not active2:
-            st.info("Add a Gemini or Anthropic key above. Gemini is free at aistudio.google.com")
+        if not k2:
+            st.info("Add a free Google AI key above. Get one at [aistudio.google.com](https://aistudio.google.com)")
         elif not q.strip():
             st.warning("Please type a question first.")
         else:
             with st.spinner("Checking the Employment Act..."):
                 try:
-                    st.write(ai_call(HR_SYSTEM, q, gkey2, akey2))
-                except RuntimeError:
-                    st.error("API key not working. Please check it and try again.")
+                    st.write(_call_gemini(HR_SYSTEM, q, k2))
+                except urllib.error.HTTPError as e:
+                    st.error("API key error." if e.code == 403 else "Too many requests — please wait." if e.code == 429 else "Could not get answer. Try again.")
                 except Exception:
-                    st.error("Could not get an answer right now. Please try again.")
-
-CONTRACT_SYSTEM = (
-    "Generate Kenya Employment Act 2007-compliant employment contracts. "
-    "Be precise and cite the relevant sections. "
-    "Include all statutory requirements."
-)
+                    st.error("Could not get an answer. Please try again.")
 
 with tab3:
     st.subheader("Employment Contract Generator")
-    st.warning("Template only — always have a lawyer review before signing.")
-    if provider == "none":
-        st.info("Add a free Gemini key below to generate contracts.")
-    gkey3, akey3 = _ai_key_widget(" (tab 3)")
+    st.warning("⚠️ Template only — have a qualified lawyer review before signing.")
+    k3 = _key_input("Google AI key:", "k3")
     with st.form("contract_form"):
         name     = st.text_input("Employee full name:")
         title    = st.text_input("Job title:")
@@ -183,32 +137,24 @@ with tab3:
         employer = st.text_input("Employer / company name:")
         ct       = st.radio("Contract type:", ["Permanent", "Fixed-term (1 year)"], horizontal=True)
         generate = st.form_submit_button("Generate contract", type="primary")
+
     if generate:
-        active3 = gkey3 or akey3
-        if not active3:
-            st.info("Add a Gemini or Anthropic key above to generate a contract.")
+        if not k3:
+            st.info("Add a Google AI key above.")
         elif not name or not title or not employer:
             st.warning("Fill in employee name, job title, and employer name.")
         else:
-            with st.spinner("Generating..."):
+            with st.spinner("Generating contract..."):
                 try:
-                    prompt = (
-                        f"Generate a Kenya Employment Act 2007-compliant employment contract. "
-                        f"Employee: {name} | Title: {title} | Gross: KES {salary:,}/month | "
-                        f"Start: {start} | Employer: {employer} | Type: {ct}. "
-                        f"Include: parties, role, salary, NSSF/NHIF/PAYE deductions, leave, "
-                        f"notice period, termination, governing law (Laws of Kenya). "
-                        f"Add [SIGNATURE LINES] at the end."
-                    )
-                    text = ai_call(CONTRACT_SYSTEM, prompt, gkey3, akey3)
+                    prompt = (f"Employee: {name} | Title: {title} | "
+                              f"Gross: KES {salary:,}/month | Start: {start} | "
+                              f"Employer: {employer} | Type: {ct}")
+                    text = _call_gemini(CONTRACT_SYSTEM, prompt, k3)
                     st.text_area("Contract:", text, height=400)
                     st.download_button("📥 Download (.txt)", text,
-                        file_name=f"contract_{name.replace(' ','_').lower()}.txt",
-                        mime="text/plain")
-                except RuntimeError:
-                    st.error("API key not working. Please check it.")
+                                       file_name=f"contract_{name.replace(' ','_').lower()}.txt")
                 except Exception:
-                    st.error("Could not generate contract. Please try again.")
+                    st.error("Could not generate the contract. Please try again.")
 
 st.divider()
-st.caption("⚠️ General guidance — not legal advice. © 2026 Gabriel Mahia · CC BY-NC-ND 4.0")
+st.caption("⚠️ Not legal advice. © 2026 Gabriel Mahia · CC BY-NC-ND 4.0 · Powered by Google Gemini")
