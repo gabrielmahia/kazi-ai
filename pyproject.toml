@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "kazi-ai"
+version = "0.1.0"
+description = "Kenya HR compliance AI — NSSF, NHIF, PAYE, Employment Act"
+license = "CC-BY-NC-ND-4.0"
+authors = [{name = "Gabriel Mahia", email = "contact@aikungfu.dev"}]
+requires-python = ">=3.10"
+dependencies = ["pandas>=2.0.0", "python-dotenv>=1.0.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["kazi_ai*"]
