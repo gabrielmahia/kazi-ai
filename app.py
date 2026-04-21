@@ -10,6 +10,12 @@ except ImportError:
     HAS_KAZI = False
 
 try:
+    import google.generativeai as genai
+    HAS_GEMINI = True
+except ImportError:
+    HAS_GEMINI = False
+
+try:
     import anthropic
     HAS_ANTHROPIC = True
 except ImportError:
@@ -61,10 +67,10 @@ def _get_api_key(key_label: str) -> str:
         st.warning("AI features not available in this environment.")
         return ""
     key = st.text_input(key_label, type="password",
-                        placeholder="sk-ant-...",
-                        help="Your key goes directly to Anthropic. It is never stored or logged here.")
-    if key and not key.startswith("sk-ant-"):
-        st.caption("⚠️ That doesn't look like an Anthropic key — keys start with sk-ant-")
+                        placeholder="AIza... or sk-ant-...",
+                        help="Gemini keys (AIza...) are free at aistudio.google.com. Anthropic keys (sk-ant-) at console.anthropic.com.")
+    if key and not (key.startswith("AIza") or key.startswith("sk-ant-")):
+        st.caption("⚠️ Unrecognised key format. Gemini starts with AIza, Anthropic with sk-ant-")
         return ""
     return key
 
@@ -83,18 +89,33 @@ with tab2:
         else:
             with st.spinner("Checking the Employment Act..."):
                 try:
-                    client = anthropic.Anthropic(api_key=api_key2)
-                    msg = client.messages.create(
-                        model="claude-haiku-4-5-20251001", max_tokens=600,
-                        system=(
-                            "You are a Kenya HR compliance assistant. Answer questions about "
-                            "Employment Act 2007, NSSF, NHIF, KRA PAYE, leave, and labour law in Kenya. "
-                            "Always cite the relevant Act and section. "
-                            "End every answer with: "
-                            "⚠️ This is general guidance — consult a qualified HR practitioner for specific cases."
-                        ),
-                        messages=[{"role": "user", "content": q}])
-                    st.write(msg.content[0].text)
+                    if api_key2.startswith("AIza") and HAS_GEMINI:
+                        genai.configure(api_key=api_key2)
+                        model = genai.GenerativeModel(
+                            "gemini-2.0-flash",
+                            system_instruction=(
+                                "You are a Kenya HR compliance assistant. Answer questions about "
+                                "Employment Act 2007, NSSF, NHIF, KRA PAYE, leave, and labour law. "
+                                "Always cite the relevant Act and section. "
+                                "End every answer with: "
+                                "⚠️ This is general guidance — consult a qualified HR practitioner for specific cases."
+                            )
+                        )
+                        resp = model.generate_content(q)
+                        st.write(resp.text)
+                    else:
+                        client = anthropic.Anthropic(api_key=api_key2)
+                        msg = client.messages.create(
+                            model="claude-haiku-4-5-20251001", max_tokens=600,
+                            system=(
+                                "You are a Kenya HR compliance assistant. Answer questions about "
+                                "Employment Act 2007, NSSF, NHIF, KRA PAYE, leave, and labour law in Kenya. "
+                                "Always cite the relevant Act and section. "
+                                "End every answer with: "
+                                "⚠️ This is general guidance — consult a qualified HR practitioner for specific cases."
+                            ),
+                            messages=[{"role": "user", "content": q}])
+                        st.write(msg.content[0].text)
                 except anthropic.AuthenticationError:
                     st.error("API key not recognised. Please check it and try again.")
                 except anthropic.RateLimitError:
