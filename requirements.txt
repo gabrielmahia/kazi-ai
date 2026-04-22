@@ -2,4 +2,3 @@ streamlit>=1.32.0
 pandas>=2.0.0
 python-dotenv>=1.0.0
 # AI: set GEMINI_API_KEY (free) or ANTHROPIC_API_KEY in Streamlit secrets
-google-generativeai>=0.8.0
