@@ -14,5 +14,5 @@ jobs:
           python-version: "3.11"
       - run: pip install --upgrade pip ruff pytest pandas
       - run: ruff check . --ignore E501
-      - run: pytest tests/ -v --tb=short
+      - run: python -m pytest tests/ -v --tb=short
         continue-on-error: true
