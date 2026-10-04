@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "kazi-ai"
 version = "0.1.0"
-description = "Kenya HR compliance AI — NSSF, NHIF, PAYE, Employment Act"
+description = "Kenya HR compliance AI — NSSF, SHIF, Housing Levy, PAYE, Employment Act"
 license = "CC-BY-NC-ND-4.0"
 authors = [{name = "Gabriel Mahia", email = "contact@aikungfu.dev"}]
 requires-python = ">=3.10"

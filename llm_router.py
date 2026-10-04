@@ -10,10 +10,10 @@ Priority:
 
 No external dependencies beyond stdlib urllib.
 """
-import os
 import json
-import urllib.request
+import os
 import urllib.error
+import urllib.request
 
 GEMINI_MODELS = [
     ("gemini-1.5-flash",    "v1beta"),
@@ -51,7 +51,7 @@ def _call_gemini(prompt: str, api_key: str, system: str = "") -> str:
             if e.code in (400, 401, 403):
                 raise RuntimeError(_ERRORS["auth"])
             continue  # try next model
-        except Exception:
+        except Exception:  # noqa: BLE001, S112 - try the next model; the loop ends by raising an "unavailable" error
             continue
     raise RuntimeError(_ERRORS["unavailable"])
 

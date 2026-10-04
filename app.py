@@ -1,4 +1,8 @@
-import sys, os, json, urllib.request
+import json
+import os
+import sys
+import urllib.request
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import streamlit as st
@@ -18,7 +22,7 @@ def _get_api_key():
              or st.secrets.get("GEMINI_API_KEY"))
         if k:
             return k
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - any secrets problem falls through to the environment variables below
         pass
     return (os.environ.get("GOOGLE_API_KEY")
             or os.environ.get("GEMINI_API_KEY", ""))
@@ -48,7 +52,7 @@ def _call_gemini(system: str, user: str, api_key: str) -> str:
             if e.code in (400, 404):
                 continue   # try next model
             raise
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - try the next model; the last error is re-raised below
             last_err = str(e)
             continue
     raise RuntimeError(f"All Gemini models failed. Last error: {last_err}")
@@ -61,7 +65,7 @@ if not HAS_KAZI:
     st.stop()
 
 st.title("⚖️ KaziAI — Kenya HR Compliance")
-st.caption("NSSF · NHIF · PAYE · Employment Act 2007 · Plain language")
+st.caption("NSSF · SHIF · Housing Levy · PAYE · Employment Act 2007 · Plain language")
 
 api_key = _get_api_key()
 
@@ -69,7 +73,7 @@ tab1, tab2, tab3 = st.tabs(["💰 Payroll Calculator", "❓ HR Q&A", "📄 Contr
 
 with tab1:
     st.subheader("Payroll Calculator")
-    st.caption("NSSF 2024 · NHIF Finance Act 2024 · KRA PAYE FY2025/26 · AHL 1.5%")
+    st.caption("NSSF Year 4 (Feb 2026) · SHIF 2.75% · Housing Levy 1.5% · KRA PAYE bands as carried over, not re-checked")
     gross  = st.number_input("Gross monthly salary (KES):", min_value=15000, max_value=5000000, value=85000, step=5000)
     period = st.text_input("Period:", value="2026-04")
     if st.button("Calculate", type="primary"):
@@ -78,24 +82,26 @@ with tab1:
             c1, c2 = st.columns(2)
             c1.metric("Gross",         f"KES {r.gross_salary:,.0f}")
             c1.metric("NSSF",          f"KES {r.nssf_employee:,.0f}")
-            c1.metric("NHIF",          f"KES {r.nhif_employee:,.0f}")
+            c1.metric("SHIF",          f"KES {r.shif_employee:,.0f}")
+            c1.metric("Housing levy",  f"KES {r.ahl_employee:,.0f}")
             c1.metric("PAYE",          f"KES {r.paye:,.0f}")
             c2.metric("Net Pay",       f"KES {r.net_pay:,.0f}",
                       delta=f"-{r.gross_salary - r.net_pay:,.0f}")
             c2.metric("Employer NSSF", f"KES {r.nssf_employer:,.0f}")
+            c2.metric("Employer housing levy", f"KES {r.ahl_employer:,.0f}")
             c2.metric("Total Cost",    f"KES {r.employer_cost:,.0f}")
-            st.info("Always verify with KRA/NSSF/NHIF for official current rates.")
-        except Exception:
+            st.info("Rates were updated from secondary sources: always verify with KRA, NSSF and SHA before relying on any figure.")
+        except Exception:  # noqa: BLE001 - UI fallback message
             st.error("Could not calculate payroll. Please check your inputs.")
 
 HR_SYSTEM = """You are a Kenya HR compliance assistant. Answer questions about:
-Employment Act 2007, NSSF Act, NHIF Act, KRA PAYE, statutory leave, and termination in Kenya.
+Employment Act 2007, NSSF Act, the Social Health Insurance Act (SHIF replaced NHIF in October 2024), the Affordable Housing Act, KRA PAYE, statutory leave, and termination in Kenya.
 Always cite the relevant Act and section number.
 Keep answers clear and practical for SME owners and HR staff.
 End every answer with: ⚠️ General guidance only — consult a qualified HR practitioner for specific cases."""
 
 CONTRACT_SYSTEM = """You generate Kenya Employment Act 2007-compliant employment contract templates.
-Include: parties, role, reporting line, salary, statutory deductions (NSSF/NHIF/PAYE),
+Include: parties, role, reporting line, salary, statutory deductions (NSSF/SHIF/Housing Levy/PAYE),
 annual leave (21 days), sick leave, maternity/paternity leave, notice period, termination,
 governing law (Laws of Kenya). Add clear [SIGNATURE LINES] at the end.
 Note at the top: TEMPLATE ONLY — review with a qualified employment lawyer before signing."""
@@ -122,7 +128,7 @@ with tab2:
                     st.write(_call_gemini(HR_SYSTEM, q, k2))
                 except urllib.error.HTTPError as e:
                     st.error("API key error." if e.code == 403 else "Too many requests — please wait." if e.code == 429 else "Could not get answer. Try again.")
-                except Exception:
+                except Exception:  # noqa: BLE001 - UI fallback message
                     st.error("Could not get an answer. Please try again.")
 
 with tab3:
@@ -153,7 +159,7 @@ with tab3:
                     st.text_area("Contract:", text, height=400)
                     st.download_button("📥 Download (.txt)", text,
                                        file_name=f"contract_{name.replace(' ','_').lower()}.txt")
-                except Exception:
+                except Exception:  # noqa: BLE001 - UI fallback message
                     st.error("Could not generate the contract. Please try again.")
 
 st.divider()
