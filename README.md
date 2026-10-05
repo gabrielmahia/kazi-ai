@@ -13,7 +13,7 @@ Every SME in Kenya faces the same compliance minefield: Employment Act requireme
 | Tool | What it does |
 |------|-------------|
 | 📄 **Contract generator** | Employment contracts aligned with Employment Act 2007 |
-| 💰 **Payroll calculator** | NSSF + SHIF + Housing Levy + PAYE (rates as of Feb 2026 from secondary sources; verify before use) |
+| 💰 **Payroll calculator** | NSSF + SHIF + Housing Levy + PAYE (SHIF confirmed on sha.go.ke 2026-10-05; NSSF, Housing Levy and PAYE from secondary sources; verify before use) |
 | ❓ **HR Q&A** | Plain-language answers to Kenya employment law questions |
 | 🗓️ **Leave tracker** | Annual, sick, maternity, paternity, compassionate leave |
 | ⚠️ **Compliance checker** | Audit your HR practices against Employment Act requirements |

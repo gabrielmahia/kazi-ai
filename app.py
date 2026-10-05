@@ -90,7 +90,7 @@ with tab1:
             c2.metric("Employer NSSF", f"KES {r.nssf_employer:,.0f}")
             c2.metric("Employer housing levy", f"KES {r.ahl_employer:,.0f}")
             c2.metric("Total Cost",    f"KES {r.employer_cost:,.0f}")
-            st.info("Rates were updated from secondary sources: always verify with KRA, NSSF and SHA before relying on any figure.")
+            st.info("SHIF was confirmed on sha.go.ke; the other rates are from secondary sources. Always verify with KRA, NSSF and SHA before relying on any figure.")
         except Exception:  # noqa: BLE001 - UI fallback message
             st.error("Could not calculate payroll. Please check your inputs.")
 

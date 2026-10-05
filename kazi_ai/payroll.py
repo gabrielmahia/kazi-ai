@@ -2,7 +2,7 @@
 KaziAI Payroll Calculator: Kenya statutory deductions, as of February 2026 (NSSF Year 4).
 
 Rates were updated on 2026-10-04 from consistent secondary sources (law-firm and payroll-provider summaries, including DLA Piper and FNJ & Associates);
-they were NOT checked against the primary KRA, NSSF or SHA publications. Verify before relying on any figure.
+SHIF (2.75% of gross, minimum KES 300, no cap) was confirmed against the official SHA site (sha.go.ke/premium-rates) on 2026-10-05; the NSSF, Housing Levy and PAYE figures were NOT checked against primary KRA or NSSF publications. Verify before relying on any figure.
   - NSSF: 6% employee + 6% employer on pensionable pay between KES 0 and 108,000 (Tier I up to 9,000, Tier II from 9,000 to 108,000).
   - SHIF (replaced NHIF in October 2024): 2.75% of gross, minimum KES 300, no cap, employee only.
   - Affordable Housing Levy: 1.5% of gross from the employee and 1.5% from the employer.
