@@ -4,7 +4,7 @@
 
 [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](LICENSE)
 [![Streamlit](https://img.shields.io/badge/Streamlit-Live-red)](https://kaziniai.streamlit.app)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://python.org)
 
 ## What it does
 
