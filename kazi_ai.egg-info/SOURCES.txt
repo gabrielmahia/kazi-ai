@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+kazi_ai/__init__.py
+kazi_ai/payroll.py
+kazi_ai.egg-info/PKG-INFO
+kazi_ai.egg-info/SOURCES.txt
+kazi_ai.egg-info/dependency_links.txt
+kazi_ai.egg-info/requires.txt
+kazi_ai.egg-info/top_level.txt
+tests/test_smoke.py
