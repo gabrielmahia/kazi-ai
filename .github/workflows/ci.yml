@@ -15,4 +15,3 @@ jobs:
       - run: pip install --upgrade pip ruff pytest pandas
       - run: ruff check . --ignore E501
       - run: python -m pytest tests/ -v --tb=short
-        continue-on-error: true
