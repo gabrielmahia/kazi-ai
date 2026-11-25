@@ -163,4 +163,4 @@ with tab3:
                     st.error("Could not generate the contract. Please try again.")
 
 st.divider()
-st.caption("⚠️ Not legal advice. © 2026 Gabriel Mahia · CC BY-NC-ND 4.0 · Powered by Google Gemini")
+st.caption("⚠️ Not legal advice. © 2026 Gabriel Mahia · PolyForm Noncommercial 1.0.0 · Powered by Google Gemini")

@@ -4,7 +4,7 @@
   "project": "kazi-ai",
   "stable_branch": "main",
   "integration_branch": "main",
-  "purpose": "KaziAI — AI-powered HR compliance for Kenya SMEs. Employment Act 2007, NSSF, NHIF, KRA PAYE calculations, and contract generation. Open-source RegTech.",
+  "purpose": "KaziAI — AI-powered HR compliance for Kenya SMEs. Employment Act 2007, NSSF, NHIF, KRA PAYE calculations, and contract generation. Source-available RegTech (PolyForm Noncommercial).",
   "cold_start": [
     "AGENTS.md",
     "README.md"

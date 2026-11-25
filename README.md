@@ -2,7 +2,7 @@
 
 > AI-powered HR compliance for Kenya SMEs and NGOs. Employment Act 2007, NSSF, SHIF, the Housing Levy, KRA PAYE calculations, contract generation, and payroll tax — in plain language.
 
-[![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](LICENSE)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 [![Streamlit](https://img.shields.io/badge/Streamlit-Live-red)](https://kaziniai.streamlit.app)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://python.org)
 
@@ -61,5 +61,5 @@ Contract generation is part of the Streamlit app (the Contract tab, which uses a
 ## IP & Collaboration
 
 © 2026 Gabriel Mahia · [contact@aikungfu.dev](mailto:contact@aikungfu.dev)
-License: CC BY-NC-ND 4.0
+License: PolyForm Noncommercial 1.0.0
 Not affiliated with KRA, NSSF, SHA, or the Government of Kenya.
