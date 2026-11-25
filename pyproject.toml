@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "kazi-ai"
 version = "0.1.0"
 description = "Kenya HR compliance AI — NSSF, SHIF, Housing Levy, PAYE, Employment Act"
-license = "CC-BY-NC-ND-4.0"
+license = "PolyForm-Noncommercial-1.0.0"
 authors = [{name = "Gabriel Mahia", email = "contact@aikungfu.dev"}]
 requires-python = ">=3.11"
 dependencies = ["pandas>=2.0.0", "python-dotenv>=1.0.0"]
